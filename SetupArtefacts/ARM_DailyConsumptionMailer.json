@@ -393,25 +393,6 @@
                     "uri": "[variables('AA').modules[copyIndex()].url]"
                 }
             }
-        },
-        {
-            "apiVersion": "2015-10-31",
-            "type": "Microsoft.Automation/automationAccounts/modules",
-            "name": "[concat(variables('automationAccountName'), '/', variables('AA').modules[copyIndex()].Name)]",
-            "location": "[resourceGroup().location]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Automation/automationAccounts/', variables('automationAccountName'))]",
-                "[resourceId('Microsoft.Storage/storageAccounts',variables('myAzureCostStorageAccountName'))]"
-            ],
-            "copy": {
-                "name": "modulesLoop",
-                "count": "[length(variables('AA').modules)]"
-            },
-            "properties": {
-                "contentLink": {
-                    "uri": "[variables('AA').modules[copyIndex()].url]"
-                }
-            }
         }
     ],
     "outputs": {
