@@ -11,14 +11,14 @@
         },
         "_artifactsLocation": {
             "type": "string",
-            "defaultValue": "https://bfrankbootcamp.blob.core.windows.net/dailyconsmailerrb",
+            "defaultValue": "https://raw.githubusercontent.com/bfrankMS/myAzureCost/master/SetupArtefacts/",
             "metadata": {
                 "description": "URI to artifacts location"
             }
         },
         "_artifactsLocationSasToken": {
             "type": "securestring",
-            "defaultValue": "?sv=2018-03-28&si=reader&sr=c&sig=cTBNaQtcZH7iTT%2BuNSsddeaDSXgE4Q5y%2BMPlwpypO7E%3D",
+            "defaultValue": "",
             "metadata": {
                 "description": "The sasToken required to access _artifactsLocation.  When the template is deployed using the accompanying scripts, a sasToken will be automatically generated"
             }
@@ -81,7 +81,7 @@
         "automationAccountName": "[concat(parameters('automationAccountPrefix'),substring(uniqueString(resourceGroup().id),0,4))]",
         "PrereqModule": {
             "name": "Az.Accounts",
-            "url": "https://www.powershellgallery.com/api/v2/package/Az.Accounts/1.7.5"
+            "url": "https://www.powershellgallery.com/api/v2/package/Az.Accounts/1.9.0"
         },
         "myAzureCostPriceSheetURI": "ToDo-upload-price-sheet-and-create-URI-with-SAS-and-place-it-here",
         "AAVariables": [
@@ -140,10 +140,10 @@
                 },
                 {
                     "name": "RunBk_CreateTable",
-                    "url": "[concat(parameters('_artifactsLocation'), '/RunBk_RunBk_CreateTable.ps1', parameters('_artifactsLocationSasToken'))]",
+                    "url": "[concat(parameters('_artifactsLocation'), '/RunBk_CreateTable.ps1', parameters('_artifactsLocationSasToken'))]",
                     "version": "1.0.0.0",
                     "type": "PowerShell",
-                    "description": "Runbook to gather azure consumption of a specified date (Date format in EN e.g. '12/30/2019').",
+                    "description": "Runbook to create a table after the deployment.",
                     "linkedToSchedule": "createTable"
                 },
                 {
@@ -167,19 +167,19 @@
             "modules": [
                 {
                     "name": "Az.Resources",
-                    "url": "https://www.powershellgallery.com/api/v2/package/Az.Resources"
+                    "url": "https://www.powershellgallery.com/api/v2/package/Az.Resources/2.2.0"
                 },
                 {
                     "name": "Az.Storage",
-                    "url": "https://www.powershellgallery.com/api/v2/package/Az.Storage"
+                    "url": "https://www.powershellgallery.com/api/v2/package/Az.Storage/2.2.0"
                 },
                 {
                     "name": "Az.Billing",
-                    "url": "https://www.powershellgallery.com/api/v2/package/Az.Billing"
+                    "url": "https://www.powershellgallery.com/api/v2/package/Az.Billing/1.0.3"
                 },
                 {
                     "name": "AzTable",
-                    "url": "https://www.powershellgallery.com/api/v2/package/AzTable"
+                    "url": "https://www.powershellgallery.com/api/v2/package/AzTable/2.0.3"
                 }
             ],
             "schedules": [
@@ -188,20 +188,23 @@
                     "startTime": "[dateTimeAdd(parameters('baseTime'),'P1DT5H10M')]",
                     "expiryTime": "9999-12-31T23:59:59.9999999+00:00",
                     "interval": 1,
-                    "frequency": "Day"
+                    "frequency": "Day",
+                    "timeZone": "UTC"
                 },
                 {
                     "name": "emaildaily",
                     "startTime": "[dateTimeAdd(parameters('baseTime'),'P1DT6H10M')]",
                     "expiryTime": "9999-12-31T23:59:59.9999999+00:00",
                     "interval": 1,
-                    "frequency": "Day"
+                    "frequency": "Day",
+                    "timeZone": "UTC"
                 },
                 {
                     "name": "createTable",
                     "startTime": "[dateTimeAdd(parameters('baseTime'),'PT20M')]",
                     "expiryTime": "9999-12-31T23:59:59.9999999+00:00",
-                    "frequency": "OneTime"
+                    "frequency": "OneTime",
+                    "timeZone": "UTC"
                 }
             ]
         },
