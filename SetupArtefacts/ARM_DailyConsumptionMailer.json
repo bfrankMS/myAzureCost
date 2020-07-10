@@ -144,7 +144,7 @@
                     "version": "1.0.0.0",
                     "type": "PowerShell",
                     "description": "Runbook to create a table after the deployment.",
-                    "linkedToSchedule": "createTable"
+                    "linkedToSchedule": ""
                 },
                 {
                     "name": "RunBk_SendCostEmail",
