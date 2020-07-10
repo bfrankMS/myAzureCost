@@ -198,13 +198,6 @@
                     "interval": 1,
                     "frequency": "Day",
                     "timeZone": "UTC"
-                },
-                {
-                    "name": "createTable",
-                    "startTime": "[dateTimeAdd(parameters('baseTime'),'PT20M')]",
-                    "expiryTime": "9999-12-31T23:59:59.9999999+00:00",
-                    "frequency": "OneTime",
-                    "timeZone": "UTC"
                 }
             ]
         },
@@ -378,6 +371,26 @@
             "properties": {
                 "contentLink": {
                     "uri": "[variables('PrereqModule').url]"
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-10-31",
+            "type": "Microsoft.Automation/automationAccounts/modules",
+            "name": "[concat(variables('automationAccountName'), '/', variables('AA').modules[copyIndex()].Name)]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Automation/automationAccounts/', variables('automationAccountName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts',variables('myAzureCostStorageAccountName'))]"
+            ],
+            "copy": {
+                "name": "modulesLoop",
+                "count": "[length(variables('AA').modules)]",
+                "mode" : "Serial"
+            },
+            "properties": {
+                "contentLink": {
+                    "uri": "[variables('AA').modules[copyIndex()].url]"
                 }
             }
         },
