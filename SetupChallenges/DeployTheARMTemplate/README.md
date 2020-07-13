@@ -76,9 +76,9 @@ $templateParameterObject1 = @{
 }  
 
 ```
-Re**run above code until you are happy with the values** ;-)  
-  
-Now kick of the ARM deployment using aboves parameters - copy & paste the following code into the cloud shell:  
+Re**run above code until you are happy with the values** ;-) 
+> **Important**: Make sure to **use a complex password for the sendgrid email account**! Otherwhise Sendgrid mail setup may fail or be soon out of service.  
+Now **kick of the ARM deployment** using aboves parameters - **copy & paste the following code into the cloud shell**:  
   
 ```PowerShell
 $deploymentstart = Get-Date
@@ -86,7 +86,15 @@ $deploymentstart = Get-Date
 #Deploy the network
 New-AzResourceGroupDeployment -ResourceGroupName "rg-myAzureCost" -Name 'myAzureCost' -Mode Incremental -TemplateUri 'https://raw.githubusercontent.com/bfrankMS/myAzureCost/master/SetupArtefacts/ARM_DailyConsumptionMailer.json' -TemplateParameterObject $templateParameterObject1
   
+```  
+  
+You can **monitor the progress** by:  
 ```
+[Azure Portal] -> Resource Groups -> "rg-AzureCost" -> Deployments -> 'myAzureCost'
+```  
+Once **finished** (approx **9 minutes**) the result should **look similar to this**:  
+| ![finished myAzureCost deployment](myAzureCostDeployment.PNG) |  ![RG after deployment](RGAfterDeployment.PNG) |
+|--|--|
+| ARM Deployment output in Azure Portal | Look at the **RG after the deployment** |
 
-
-[next](../../README.md)
+[next](../CreateAzureRunAsAccount/README.md)

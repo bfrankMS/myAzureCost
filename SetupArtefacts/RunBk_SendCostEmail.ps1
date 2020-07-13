@@ -114,7 +114,7 @@ Write-Output 'Calculating costs...i.e.: Matching MeterIDs of usage to pricelist.
 $costEntries = @()
 foreach ($usageEntry in $usageEntries) {
     Write-Host "." -NoNewline
-    $costEntries += $usageEntry | select-object UsageStartTime, UsageEndTime, MeterCategory, MeterSubCategory, MeterName, InstanceName, RG, Location, @{N = 'Quantity'; E = { [decimal]$_.Quantity } }, Unit, @{N = 'UnitPrice'; E = { $MeterID = $_.MeterId ; ($priceList | where { $_.MeterId -eq $MeterID }).MeterRates -match "([0-9]+,[0-9]*)" | Out-Null ; $price = [decimal]0; $price = ([decimal]($Matches[1] -replace ',', '.')) ; $price } }, @{N = 'Estimated Costs'; E = { $MeterID = $_.MeterID ; ($priceList | where { $_.MeterId -eq $MeterID }).MeterRates -match "([0-9]+,[0-9]*)" | Out-Null ; $price = [decimal]0; $price = ([decimal]($Matches[1] -replace ',', '.') * [decimal]$_.Quantity) ; $price } } , MeterID, Tags
+    $costEntries += $usageEntry | select-object UsageStartTime, UsageEndTime, MeterCategory, MeterSubCategory, MeterName, InstanceName, RG, Location, @{N = 'Quantity'; E = { [decimal]$_.Quantity } }, Unit, @{N = 'UnitPrice'; E = { $MeterID = $_.MeterId ; ($priceList | where { $_.MeterId -eq $MeterID }).MeterRates -match "([0-9]+\.[0-9]*)" | Out-Null ; $price = [decimal]0; $price = ([decimal]($Matches[1])) ; $price } }, @{N = 'Estimated Costs'; E = { $MeterID = $_.MeterID ; ($priceList | where { $_.MeterId -eq $MeterID }).MeterRates -match "([0-9]+\.[0-9]*)" | Out-Null ; $price = [decimal]0; $price = ([decimal]($Matches[1]) * [decimal]$_.Quantity) ; $price } } , MeterID, Tags
 }
 
 # reporting section

@@ -23,9 +23,9 @@ In your inbox you'll get a report each day of the usage and the costs (if you up
 # The Setup  
 [1. Deploy the ARM Template](./SetupChallenges/DeployTheARMTemplate/README.md)  
 [2. Create an Azure Run As Account](./SetupChallenges/CreateAzureRunAsAccount/README.md)  
-[3. Generate a price sheet](./SetupChallenges/GenerateAPriceSheet/README.md)  
-[4. Upload the price sheet.](./SetupChallenges/UploadThePriceSheet/README.md)  
-[5. Run a report](./SetupChallenges/RunAReport/README.md)  
+[3. Create a Table and see AA Variables Section](./SetupChallenges/CreateTableAndVariables/README.md)  
+[4. Generate a price sheet](./SetupChallenges/GenerateAPriceSheet/README.md)  
+[5. Run a report](./SetupChallenges/RunAReport/README.md) 
 
 
 # The Solution Architecture  
