@@ -1,5 +1,3 @@
-**under construction!!!**
-
 # myAzureCost...
 [![HitCount](https://hits.dwyl.com/bfrankMS/myAzureCost.svg)](http://hits.dwyl.com/bfrankMS/myAzureCost)  
 _...**sends** you a **daily email** with your **azure consumption report**..._  
