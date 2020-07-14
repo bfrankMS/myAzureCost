@@ -159,8 +159,8 @@
                     "url": "[concat(parameters('_artifactsLocation'), '/RunBk_SendUsageEmail.ps1', parameters('_artifactsLocationSasToken'))]",
                     "version": "1.0.0.0",
                     "type": "PowerShell",
-                    "description": "Send daily consumption as .csv attached to an email (via sendgrid).",
-                    "linkedToSchedule": "emaildaily"
+                    "description": "Send consumption as .csv attached to an email (via sendgrid).",
+                    "linkedToSchedule": ""
                 }
 
             ],
@@ -185,7 +185,7 @@
             "schedules": [
                 {
                     "name": "daily",
-                    "startTime": "[dateTimeAdd(parameters('baseTime'),'P1DT5H10M')]",
+                    "startTime": "[dateTimeAdd(parameters('baseTime'),'P1DT8H30M')]",
                     "expiryTime": "9999-12-31T23:59:59.9999999+00:00",
                     "interval": 1,
                     "frequency": "Day",
@@ -193,7 +193,7 @@
                 },
                 {
                     "name": "emaildaily",
-                    "startTime": "[dateTimeAdd(parameters('baseTime'),'P1DT6H10M')]",
+                    "startTime": "[dateTimeAdd(parameters('baseTime'),'P1DT8H58M')]",
                     "expiryTime": "9999-12-31T23:59:59.9999999+00:00",
                     "interval": 1,
                     "frequency": "Day",

@@ -10,8 +10,18 @@ $UserCredential = Get-AutomationPSCredential -Name 'myAzureCostSendgrid'
 $smtpUser = $UserCredential.UserName
 $smtpPassword = $UserCredential.Password
 $smtpRecipient = Get-AutomationVariable -Name 'myAzureCostSmtpRecipient' 
-#$myAzureCostPriceSheetURI = Get-AutomationVariable -Name 'myAzureCostPriceSheetURI'
 $myCultureInfo = Get-AutomationVariable -Name 'myAzureCostCultureInfo'
+
+try
+{
+    "...attachments destination culture: $myCultureInfo"
+    $destculture = [CultureInfo]::new("$myCultureInfo")
+}
+catch [System.Globalization.CultureNotFoundException]
+{
+    "$myCultureInfo did not work ... using en-US instead."
+    $destculture = [CultureInfo]::new("en-US")
+}
 
 try {
     # Get the connection "AzureRunAsConnection "
@@ -43,7 +53,7 @@ catch {
 Write-Output $account
 
 #region loading usage data from blob storage
-$StartDate = [datetime]::Today.AddDays(-1).ToUniversalTime()
+$StartDate = [datetime]::Today.AddDays(-1)
 $fileName = "$($StartDate.ToString("yyyyMMdd"))Consumption.csv"
 
 "Get latest consumption file from blob...$fileName"
@@ -81,6 +91,7 @@ if ((Get-AzContext).name -match "^(.*) - .*$")
 }else {
     $subscriptionName = (Get-AzContext).name
 }
+
 $smtpSubject = "Usage report of $($StartDate.ToString("yyyyMMdd")) for $subscriptionName"
 
 #Create the .net email object
@@ -98,7 +109,7 @@ $htmlBody = @"
 </head>
 <body>
 <p><h2>Hello,</h2></p>
-<p>This is your daily usage report of <b>$($StartDate.ToString("dd-MM-yyyy"))</b> for subscription: <b>$subscriptionName</b>.</p>
+<p>This is your daily usage report of <b>$($StartDate.ToString("d",$destculture))</b> for subscription: <b>$subscriptionName</b>.</p>
 <p>(cultureinfo: <b>$myCultureInfo.</b>)</p>
 <p>hope you'll find it useful.</p>
 "@
@@ -111,18 +122,7 @@ $aViewHTMLText = [System.Net.Mail.AlternateView]::CreateAlternateViewFromString(
 $mail.AlternateViews.Add($aViewHTMLText ); 
 
 $transformedUsagePath = "$Env:temp\$($StartDate.ToString("yyyyMMdd"))ConsumptionCulture.csv"
-try
-{
-    "...attachments destination culture: $myCultureInfo"
-    $destculture = [CultureInfo]::new("$myCultureInfo")
-}
-catch [System.Globalization.CultureNotFoundException]
-{
-    "$myCultureInfo did not work ... using en-US instead."
-    $destculture = [CultureInfo]::new("en-US")
-}
-
-$usageEntries | Select-object@{N = 'UsageStartTime'; E = { "{0}" -f [System.DateTime]::Parse($_.UsageStartTime,[CultureInfo]::new("en-us")).ToString("d",$destculture) } }, @{N = 'UsageEndTime'; E = { "{0}" -f [System.DateTime]::Parse($_.UsageEndTime,[CultureInfo]::new("en-us")).ToString("d",$destculture) } } ,MeterCategory,MeterSubCategory,MeterName,InstanceName, RG, Location, @{N='Quantity';E={$([decimal]$_.Quantity).ToString($destculture)}},Unit,MeterId, Tags | Export-Csv "$transformedUsagePath" -Encoding UTF8 -Delimiter ';' -NoTypeInformation
+$usageEntries | Select-object @{N = 'UsageStartTime'; E = { "{0}" -f [System.DateTime]::Parse($_.UsageStartTime,[CultureInfo]::new("en-us")).ToString("d",$destculture) } }, @{N = 'UsageEndTime'; E = { "{0}" -f [System.DateTime]::Parse($_.UsageEndTime,[CultureInfo]::new("en-us")).ToString("d",$destculture) } }, MeterCategory, MeterSubCategory, MeterName, InstanceName, RG, Location, @{N = 'Quantity'; E = { $([decimal]$_.Quantity).ToString($destculture) } }, Unit, MeterId, Tags | Export-Csv "$transformedUsagePath" -Encoding UTF8 -Delimiter ';' -NoTypeInformation
 
 if ((Test-Path $transformedUsagePath )) {
     "...add usage as attachment"

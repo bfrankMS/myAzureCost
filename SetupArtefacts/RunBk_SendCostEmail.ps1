@@ -387,12 +387,7 @@ $mail.AlternateViews.Add($aViewHTMLText );
 
 #adding attachments
 $costEntriesName = "$Env:temp\$($StartDate.ToString("yyyyMMdd"))Costs.csv"
-<#function mySet-Culture([System.Globalization.CultureInfo] $culture)
-{
-    [System.Threading.Thread]::CurrentThread.CurrentUICulture = $culture
-    [System.Threading.Thread]::CurrentThread.CurrentCulture = $culture
-}
-mySet-Culture $destculture   
+ 
 #>
 $costEntries | Select-object @{N = 'UsageStartTime'; E = { "{0}" -f [System.DateTime]::Parse($_.UsageStartTime,[CultureInfo]::new("en-us")).ToString("d",$destculture) } }, @{N = 'UsageEndTime'; E = { "{0}" -f [System.DateTime]::Parse($_.UsageEndTime,[CultureInfo]::new("en-us")).ToString("d",$destculture) } } , MeterCategory, MeterSubCategory, MeterName, InstanceName, RG, Location, @{N = 'Quantity'; E = { $([decimal]$_.Quantity).ToString($destculture) } }, Unit, @{N = 'UnitPrice'; E = { $([decimal]$_.UnitPrice).ToString($destculture) } }, @{L = 'Estimated Costs'; E = { $([decimal]$_.'Estimated Costs').ToString($destculture) } }, MeterId, Tags | Export-Csv "$costEntriesName" -Encoding UTF8 -Delimiter ';' -NoTypeInformation -Force 
 if ((Test-Path $costEntriesName )) {
