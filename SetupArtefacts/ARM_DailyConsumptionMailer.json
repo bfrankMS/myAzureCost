@@ -136,7 +136,7 @@
                     "version": "1.0.0.0",
                     "type": "PowerShell",
                     "description": "Runbook to gather azure consumption of the day.",
-                    "linkedToSchedule": "daily"
+                    "linkedToSchedule": "monthly"
                 },
                 {
                     "name": "RunBk_CreateTable",
@@ -184,12 +184,15 @@
             ],
             "schedules": [
                 {
-                    "name": "daily",
+                    "name": "monthly",
                     "startTime": "[dateTimeAdd(parameters('baseTime'),'P1DT8H30M')]",
                     "expiryTime": "9999-12-31T23:59:59.9999999+00:00",
                     "interval": 1,
-                    "frequency": "Day",
-                    "timeZone": "UTC"
+                    "frequency": "Month",
+                    "timeZone": "UTC",
+                    "advancedSchedule": {
+                        "monthDays": [3]
+                    }
                 },
                 {
                     "name": "emaildaily",
@@ -292,7 +295,8 @@
                 "expiryTime": "[variables('AA').schedules[copyIndex()].expiryTime]",
                 "interval": "[variables('AA').schedules[copyIndex()].interval]",
                 "frequency": "[variables('AA').schedules[copyIndex()].frequency]",
-                "timeZone": "[variables('AA').schedules[copyIndex()].timeZone]"
+                "timeZone": "[variables('AA').schedules[copyIndex()].timeZone]",
+                "advancedSchedule": "[variables('AA').schedules[copyIndex()].advancedSchedule]"
             }
         },
         {
