@@ -1,10 +1,4 @@
-﻿param (
-    [parameter(Mandatory = $false,
-        HelpMessage = "Enter a en-us formatted date e.g. '12/30/2019'")]
-    [String]$myDate
-)
-
-[void][Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") 
+﻿[void][Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") 
 [void][Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms.DataVisualization")
 
 #Loginto Azure subscription - Get Execution Context.
@@ -61,15 +55,19 @@ catch {
 Write-Output $account
 
 #region loading usage data from blob storage
-try {
-    $startDate = [dateTime]::Parse($myDate)
-}
-catch {
-    $startDate = [dateTime]::Today.AddDays(-1)      #default to yesterday
-}
-Write-Output "Processing Cost for date: $StartDate"
+$date = [dateTime]::Today.AddMonths(-1)
+$year = $date.Year
+$month = $date.Month
 
-$fileName = "$($StartDate.ToString("yyyyMMdd"))Consumption.csv"
+$startOfMonth = Get-Date -Year $year -Month $month -Day 1 -Hour 0 -Minute 0 -Second 0 -Millisecond 0
+$endOfMonth = $startOfMonth.AddMonths(1).AddDays(-1).AddHours(23)
+
+$ConsumptionDate = $startOfMonth
+$EndDate = $endOfMonth
+
+Write-Output "Processing Cost between $($ConsumptionDate.ToString("dd'/'MM'/'yyyy")) and $($EndDate.ToString("dd'/'MM'/'yyyy"))"
+
+$fileName = "$($ConsumptionDate.ToString("yyyyMMdd"))-$($EndDate.ToString("yyyyMMdd"))-Consumption.csv"
 
 "Get latest consumption file from blob...$fileName"
 $RGName = (Get-AzResource -Name $storageAccount -ResourceType 'Microsoft.Storage/storageAccounts').ResourceGroupName
@@ -179,24 +177,24 @@ $cloudTable = (Get-AzStorageTable –Name $tableName –Context $ctx).CloudTable
 
 #update or new
 try {
-    $entry = Get-AzTableRow -Table $cloudTable -PartitionKey $startDate.ToString('MMMM') -rowKey "$($startDate.ToString('dd'))"
+    $entry = Get-AzTableRow -Table $cloudTable -PartitionKey $ConsumptionDate.ToString('MMMM') -rowKey "$($ConsumptionDate.ToString('dd'))"
     $entry.TotalCost = "{0:N2}" -f $totalCost
-    $entry.Year = $startDate.Year
+    $entry.Year = $ConsumptionDate.Year
     $entry | Update-AzTableRow -table $cloudTable
 }
 catch {
-    Add-AzTableRow -table $cloudTable -partitionKey $startDate.ToString('MMMM') `
-        -rowKey "$($startDate.ToString('dd'))" -property @{"TotalCost" = $("{0:N2}" -f $totalCost); "Year" = $startDate.Year }
+    Add-AzTableRow -table $cloudTable -partitionKey $ConsumptionDate.ToString('MMMM') `
+        -rowKey "$($ConsumptionDate.ToString('dd'))" -property @{"TotalCost" = $("{0:N2}" -f $totalCost); "Year" = $ConsumptionDate.Year }
 }
 
-Get-AzTableRow -Table $cloudTable -PartitionKey $startDate.ToString('MMMM') -rowKey "$($startDate.ToString('dd'))"
-#Get last 7 days
-$last7Days = @()
-for ($date = $startDate.AddDays(-6); $date -le $startDate; $date += [System.timespan]::new(1, 0, 0, 0)) { 
-    $last7Days += Get-AzTableRow -Table $cloudTable -PartitionKey $date.ToString('MMMM') -rowKey "$($date.ToString('dd'))"
-}
+Get-AzTableRow -Table $cloudTable -PartitionKey $ConsumptionDate.ToString('MMMM') -rowKey "$($ConsumptionDate.ToString('dd'))"
+#Get last month
+$lastMonth = @()
+#for ($date = $ConsumptionDate; $date -le $EndDate; $date += [System.timespan]::new(1, 0, 0, 0)) { 
+    $lastMonth += Get-AzTableRow -Table $cloudTable -PartitionKey $ConsumptionDate.ToString('MMMM') -rowKey "$($ConsumptionDate.ToString('dd'))"
+#}
 
-$last7Days | ft RowKey, PartitionKey, Year, TotalCost
+$lastMonth | ft RowKey, PartitionKey, Year, TotalCost
 
 #endregion
 
@@ -258,8 +256,7 @@ else {
     $subscriptionName = (Get-AzContext).name
 }
 
-$smtpSubject = "Cost report of $($StartDate.ToString("yyyyMMdd")) for $subscriptionName"
-
+$smtpSubject = "Cost report between $($ConsumptionDate.ToString("dd'/'MM'/'yyyy")) and $($EndDate.ToString("dd'/'MM'/'yyyy")) for $subscriptionName"
 
 #Create the .net email object
 $mail = [System.Net.Mail.MailMessage]::new()
@@ -272,18 +269,18 @@ $htmlBody = @"
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>Your Azure Daily Consumption Report</title>
+<title>Your Azure Monthly Consumption Report</title>
 </head>
 <body>
 <p><h2>Hello,</h2></p>
-<p>This is your daily report for subscription: <b>$subscriptionName</b>.</p>
-<p>Date: <b>$($StartDate.ToString("d",$destculture))</b>.</p>
-<p>You have <b>$("{0}" -f $($costEntries.Count)) items</b> on your daily consumption list.<br>
+<p>This is your monthly report for subscription: <b>$subscriptionName</b>.</p>
+<p>Date range: <b>$($ConsumptionDate.ToString("dd'/'MM'/'yyyy",$destculture)) - $($EndDate.ToString("dd'/'MM'/'yyyy",$destculture))</b>.</p>
+<p>You have <b>$("{0}" -f $($costEntries.Count)) items</b> on your montly consumption list.<br>
 They sum up to <b>$("{0:N2}" -f $totalCost)</b> in total for the day.</p>
 "@
 $htmlBody += "<p><h3>Costs History:</h3>"
 $htmlBody += "<table style=""width:auto; height: auto;""><tr><td><img src='cid:costHistoryChart'></td><td>"
-$htmlBody += $($last7Days | Select-Object @{N = 'Day'; E = { "{0}" -f $_.RowKey } }, @{N = 'Month'; E = { "{0}" -f $_.PartitionKey } }, Year, TotalCost | ConvertTo-Html -Property Day, Month, Year, TotalCost -Fragment)
+$htmlBody += $($lastMonth | Select-Object @{N = 'Day'; E = { "{0}" -f $_.RowKey } }, @{N = 'Month'; E = { "{0}" -f $_.PartitionKey } }, Year, TotalCost | ConvertTo-Html -Property Day, Month, Year, TotalCost -Fragment)
 $htmlBody += "</td></tr></table></p>"
 $htmlBody += "<p><h3>Costs Per Category:</h3>"
 $htmlBody += "<table style=""width:auto; height: auto;""><tr><td><img src='cid:costsPerCatChart'></td><td>"
@@ -354,10 +351,10 @@ $lr3.ContentId = 'costsPerRegionChart';
 $aViewHTMLText.LinkedResources.Add($lr3);
 
 
-#region Last 7 days cost history chart
-$last7DaysNormalized =  $last7Days | Select-Object @{N = 'Name'; E = { [System.DateTime]::ParseExact("$($_.Year)-$($_.PartitionKey)-$($_.RowKey)", "yyyy-MMMM-dd", [System.Globalization.CultureInfo]::CurrentCulture).ToString("d",$destculture)}},@{N = 'Sum'; E = { $_.TotalCost}}
+#region Last month cost history chart
+$lastMonthNormalized =  $lastMonth | Select-Object @{N = 'Name'; E = { [System.DateTime]::ParseExact("$($_.Year)-$($_.PartitionKey)-$($_.RowKey)", "yyyy-MMMM-dd", [System.Globalization.CultureInfo]::CurrentCulture).ToString("d",$destculture)}},@{N = 'Sum'; E = { $_.TotalCost}}
 
-$costHistoryChart = MyChart "Last 7 Days Cost History" $last7DaysNormalized $([System.Windows.Forms.DataVisualization.Charting.SeriesChartType]::Column)
+$costHistoryChart = MyChart "Last Month Cost History" $lastMonthNormalized $([System.Windows.Forms.DataVisualization.Charting.SeriesChartType]::Column)
 $costHistoryChart.ChartAreas[0].AxisX.Enabled = [System.Windows.Forms.DataVisualization.Charting.AxisEnabled]::True 
 $costHistoryChart.ChartAreas[0].AxisY.Enabled = [System.Windows.Forms.DataVisualization.Charting.AxisEnabled]::False
 $costHistoryChart.ChartAreas[0].AxisX.ArrowStyle = [System.Windows.Forms.DataVisualization.Charting.AxisArrowStyle]::Triangle
@@ -386,8 +383,7 @@ $aViewHTMLText.LinkedResources.Add($lr4);
 $mail.AlternateViews.Add($aViewHTMLText ); 
 
 #adding attachments
-$costEntriesName = "$Env:temp\$($StartDate.ToString("yyyyMMdd"))Costs.csv"
- 
+$costEntriesName = "$Env:temp\$($ConsumptionDate.ToString("yyyyMMdd"))-$($EndDate.ToString("yyyyMMdd"))-Costs.csv"
 #>
 $costEntries | Select-object @{N = 'UsageStartTime'; E = { "{0}" -f [System.DateTime]::Parse($_.UsageStartTime,[CultureInfo]::new("en-us")).ToString("d",$destculture) } }, @{N = 'UsageEndTime'; E = { "{0}" -f [System.DateTime]::Parse($_.UsageEndTime,[CultureInfo]::new("en-us")).ToString("d",$destculture) } } , MeterCategory, MeterSubCategory, MeterName, InstanceName, RG, Location, @{N = 'Quantity'; E = { $([decimal]$_.Quantity).ToString($destculture) } }, Unit, @{N = 'UnitPrice'; E = { $([decimal]$_.UnitPrice).ToString($destculture) } }, @{L = 'Estimated Costs'; E = { $([decimal]$_.'Estimated Costs').ToString($destculture) } }, MeterId, Tags | Export-Csv "$costEntriesName" -Encoding UTF8 -Delimiter ';' -NoTypeInformation -Force 
 if ((Test-Path $costEntriesName )) {
@@ -399,7 +395,7 @@ if ((Test-Path $costEntriesName )) {
     $mail.Attachments.Add($attachment)
 }
 
-$transformedUsagePath = "$Env:temp\$($StartDate.ToString("yyyyMMdd"))ConsumptionCulture.csv"
+$transformedUsagePath = "$Env:temp\$($ConsumptionDate.ToString("yyyyMMdd"))-$($EndDate.ToString("yyyyMMdd"))-ConsumptionCulture.csv"
 $usageEntries | Select-object @{N = 'UsageStartTime'; E = { "{0}" -f [System.DateTime]::Parse($_.UsageStartTime,[CultureInfo]::new("en-us")).ToString("d",$destculture) } }, @{N = 'UsageEndTime'; E = { "{0}" -f [System.DateTime]::Parse($_.UsageEndTime,[CultureInfo]::new("en-us")).ToString("d",$destculture) } }, MeterCategory, MeterSubCategory, MeterName, InstanceName, RG, Location, @{N = 'Quantity'; E = { $([decimal]$_.Quantity).ToString($destculture) } }, Unit, MeterId, Tags | Export-Csv "$transformedUsagePath" -Encoding UTF8 -Delimiter ';' -NoTypeInformation
 
 if ((Test-Path $transformedUsagePath )) {
