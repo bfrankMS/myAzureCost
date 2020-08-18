@@ -11,7 +11,7 @@
         },
         "_artifactsLocation": {
             "type": "string",
-            "defaultValue": "https://github.com/mobilabsolutions/myAzureCost/master/SetupArtefacts/",
+            "defaultValue": "https://raw.githubusercontent.com/mobilabsolutions/myAzureCost/master/SetupArtefacts/",
             "metadata": {
                 "description": "URI to artifacts location"
             }
