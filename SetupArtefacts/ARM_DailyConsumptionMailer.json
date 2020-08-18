@@ -11,7 +11,7 @@
         },
         "_artifactsLocation": {
             "type": "string",
-            "defaultValue": "https://raw.githubusercontent.com/bfrankMS/myAzureCost/master/SetupArtefacts/",
+            "defaultValue": "https://raw.githubusercontent.com/mobilabsolutions/myAzureCost/master/SetupArtefacts/",
             "metadata": {
                 "description": "URI to artifacts location"
             }
@@ -136,7 +136,11 @@
                     "version": "1.0.0.0",
                     "type": "PowerShell",
                     "description": "Runbook to gather azure consumption of the day.",
-                    "linkedToSchedule": "daily"
+                    "linkedToSchedule": "monthly",
+                    "parameters": {
+                        "tagLabel": "ms-resource-usage",
+                        "tagValue": "azure-cloud-shell"
+                    }
                 },
                 {
                     "name": "RunBk_CreateTable",
@@ -184,20 +188,15 @@
             ],
             "schedules": [
                 {
-                    "name": "daily",
+                    "name": "monthly",
                     "startTime": "[dateTimeAdd(parameters('baseTime'),'P1DT8H30M')]",
                     "expiryTime": "9999-12-31T23:59:59.9999999+00:00",
                     "interval": 1,
-                    "frequency": "Day",
-                    "timeZone": "UTC"
-                },
-                {
-                    "name": "emaildaily",
-                    "startTime": "[dateTimeAdd(parameters('baseTime'),'P1DT8H58M')]",
-                    "expiryTime": "9999-12-31T23:59:59.9999999+00:00",
-                    "interval": 1,
-                    "frequency": "Day",
-                    "timeZone": "UTC"
+                    "frequency": "Month",
+                    "timeZone": "UTC",
+                    "advancedSchedule": {
+                        "monthDays": [3]
+                    }
                 }
             ]
         },
@@ -292,7 +291,8 @@
                 "expiryTime": "[variables('AA').schedules[copyIndex()].expiryTime]",
                 "interval": "[variables('AA').schedules[copyIndex()].interval]",
                 "frequency": "[variables('AA').schedules[copyIndex()].frequency]",
-                "timeZone": "[variables('AA').schedules[copyIndex()].timeZone]"
+                "timeZone": "[variables('AA').schedules[copyIndex()].timeZone]",
+                "advancedSchedule": "[variables('AA').schedules[copyIndex()].advancedSchedule]"
             }
         },
         {
@@ -315,6 +315,10 @@
                 },
                 "schedule": {
                     "name": "[variables('AA').runbooks[copyIndex()].linkedToSchedule]"
+                },
+                "parameters": {
+                   "tagLabel": "[variables('AA').runbooks[copyIndex()].parameters.tagLabel]",
+                   "tagValue": "[variables('AA').runbooks[copyIndex()].parameters.tagValue]"
                 }
             }
         },
