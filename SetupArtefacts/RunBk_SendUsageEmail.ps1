@@ -53,8 +53,17 @@ catch {
 Write-Output $account
 
 #region loading usage data from blob storage
-$StartDate = [datetime]::Today.AddDays(-1)
-$fileName = "$($StartDate.ToString("yyyyMMdd"))Consumption.csv"
+$date = [dateTime]::Today.AddMonths(-1)
+$year = $date.Year
+$month = $date.Month
+
+$startOfMonth = Get-Date -Year $year -Month $month -Day 1 -Hour 0 -Minute 0 -Second 0 -Millisecond 0
+$endOfMonth = $startOfMonth.AddMonths(1).AddDays(-1).AddHours(23)
+
+$ConsumptionDate = $startOfMonth
+$EndDate = $endOfMonth
+
+$fileName = "$($ConsumptionDate.ToString("yyyyMMdd"))-$($EndDate.ToString("yyyyMMdd"))-Consumption.csv"
 
 "Get latest consumption file from blob...$fileName"
 $RGName = (Get-AzResource -Name $storageAccount -ResourceType 'Microsoft.Storage/storageAccounts').ResourceGroupName
@@ -92,7 +101,7 @@ if ((Get-AzContext).name -match "^(.*) - .*$")
     $subscriptionName = (Get-AzContext).name
 }
 
-$smtpSubject = "Usage report of $($StartDate.ToString("yyyyMMdd")) for $subscriptionName"
+$smtpSubject = "Usage report between $($ConsumptionDate.ToString("dd'/'MM'/'yyyy")) and $($EndDate.ToString("dd'/'MM'/'yyyy")) for $subscriptionName"
 
 #Create the .net email object
 $mail = [System.Net.Mail.MailMessage]::new()
@@ -105,11 +114,12 @@ $htmlBody = @"
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>Your Azure Daily Usage Email</title>
+<title>Your Azure Montly Usage Email</title>
 </head>
 <body>
 <p><h2>Hello,</h2></p>
-<p>This is your daily usage report of <b>$($StartDate.ToString("d",$destculture))</b> for subscription: <b>$subscriptionName</b>.</p>
+<p>This is your montly usage report for subscription: <b>$subscriptionName</b>.</p>
+<p>Date range: <b>$($ConsumptionDate.ToString("dd'/'MM'/'yyyy",$destculture)) - $($EndDate.ToString("dd'/'MM'/'yyyy",$destculture))</b>.</p>
 <p>(cultureinfo: <b>$myCultureInfo.</b>)</p>
 <p>hope you'll find it useful.</p>
 "@
@@ -121,7 +131,7 @@ $aViewHTMLText = [System.Net.Mail.AlternateView]::CreateAlternateViewFromString(
 #add the content to the mail object.
 $mail.AlternateViews.Add($aViewHTMLText ); 
 
-$transformedUsagePath = "$Env:temp\$($StartDate.ToString("yyyyMMdd"))ConsumptionCulture.csv"
+$transformedUsagePath = "$Env:temp\$($ConsumptionDate.ToString("yyyyMMdd"))-$($EndDate.ToString("yyyyMMdd"))-ConsumptionCulture.csv"
 $usageEntries | Select-object @{N = 'UsageStartTime'; E = { "{0}" -f [System.DateTime]::Parse($_.UsageStartTime,[CultureInfo]::new("en-us")).ToString("d",$destculture) } }, @{N = 'UsageEndTime'; E = { "{0}" -f [System.DateTime]::Parse($_.UsageEndTime,[CultureInfo]::new("en-us")).ToString("d",$destculture) } }, MeterCategory, MeterSubCategory, MeterName, InstanceName, RG, Location, @{N = 'Quantity'; E = { $([decimal]$_.Quantity).ToString($destculture) } }, Unit, MeterId, Tags | Export-Csv "$transformedUsagePath" -Encoding UTF8 -Delimiter ';' -NoTypeInformation
 
 if ((Test-Path $transformedUsagePath )) {
