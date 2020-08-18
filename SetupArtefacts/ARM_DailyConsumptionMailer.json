@@ -197,14 +197,6 @@
                     "advancedSchedule": {
                         "monthDays": [3]
                     }
-                },
-                {
-                    "name": "emaildaily",
-                    "startTime": "[dateTimeAdd(parameters('baseTime'),'P1DT8H58M')]",
-                    "expiryTime": "9999-12-31T23:59:59.9999999+00:00",
-                    "interval": 1,
-                    "frequency": "Day",
-                    "timeZone": "UTC"
                 }
             ]
         },
