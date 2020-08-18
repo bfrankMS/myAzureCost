@@ -1,16 +1,23 @@
 ﻿param (
-    [parameter(Mandatory = $false,
-        HelpMessage = "Enter a en-us formatted date e.g. '12/30/2019'")]
-    [String]$myDate
+    [parameter(Mandatory = $true,
+        HelpMessage = "Enter a tag label e.g. 'ms-resource-usage'")]
+    [String]$tagLabel,
+    [parameter(Mandatory = $true,
+        HelpMessage = "Enter a tag value e.g. 'azure-cloud-shell'")]
+    [String]$tagValue
 )
 
-try {
-    $ConsumptionDate = [dateTime]::Parse($myDate)
-}
-catch {
-    $ConsumptionDate = [dateTime]::Today.AddDays(-1)      #default to yesterday
-}
-Write-Output "Get consumption of $($ConsumptionDate.ToString("dd'/'MM'/'yyyy"))"
+$date = [dateTime]::Today.AddMonths(-1)
+$year = $date.Year
+$month = $date.Month
+
+$startOfMonth = Get-Date -Year $year -Month $month -Day 1 -Hour 0 -Minute 0 -Second 0 -Millisecond 0
+$endOfMonth = $startOfMonth.AddMonths(1).AddDays(-1).AddHours(23)
+
+$ConsumptionDate = $startOfMonth
+$EndDate = $endOfMonth
+
+Write-Output "Get consumption between $($ConsumptionDate.ToString("dd'/'MM'/'yyyy")) and $($EndDate.ToString("dd'/'MM'/'yyyy"))"
 
 #Loginto Azure subscription - Get Execution Context.
 $connectionName = "AzureRunAsConnection"
@@ -39,11 +46,11 @@ try {
     do {
         if ($UsageAggregates.ContinuationToken) {
             "continue"
-            $UsageAggregates = Get-UsageAggregates -ContinuationToken $($UsageAggregates.ContinuationToken) -ShowDetails $true -Verbose -ReportedStartTime $ConsumptionDate -ReportedEndTime $ConsumptionDate.addHours(25) -AggregationGranularity Hourly
+            $UsageAggregates = Get-UsageAggregates -ContinuationToken $($UsageAggregates.ContinuationToken) -ShowDetails $true -Verbose -ReportedStartTime $ConsumptionDate -ReportedEndTime $EndDate -AggregationGranularity Hourly
         }
         else {
             "first data"
-            $UsageAggregates = Get-UsageAggregates -ShowDetails $true -Verbose -ReportedStartTime $ConsumptionDate -ReportedEndTime $ConsumptionDate.addHours(25) -AggregationGranularity Hourly
+            $UsageAggregates = Get-UsageAggregates -ShowDetails $true -Verbose -ReportedStartTime $ConsumptionDate -ReportedEndTime $EndDate -AggregationGranularity Hourly
         }
 
         foreach ($item in $UsageAggregates.UsageAggregations) {
@@ -52,12 +59,13 @@ try {
     }
     while ($UsageAggregates.ContinuationToken)
 
-    $UsageToExport = $UsageAggregations | % { $_.Properties | select-object UsageStartTime, UsageEndTime, MeterCategory, MeterSubCategory, MeterName, @{N = 'InstanceName'; E = { ($_.InstanceData | ConvertFrom-Json).'Microsoft.Resources'.resourceUri.Split('/') | select -Last 1 } }, @{N = 'RG'; E = { ($_.InstanceData | ConvertFrom-Json).'Microsoft.Resources'.resourceUri.Split('/')[4] } }, @{N = 'Location'; E = { ($_.InstanceData | ConvertFrom-Json).'Microsoft.Resources'.location } }, @{N = 'Quantity'; E = { $_.Quantity } }, Unit, MeterId, @{N = 'Tags'; E = { ($_.InstanceData | ConvertFrom-Json).'Microsoft.Resources'.tags } } } | where { ($(get-Date $_.UsageStartTime) -ge $(Get-date $ConsumptionDate.ToShortDateString()) -and ($(get-Date $_.UsageStartTime) -lt $(Get-date $ConsumptionDate.AddDays(1).ToShortDateString()))) } 
-    # sum up quantities of instances with same MeterID,date and rg 
+    $UsageToExport = $UsageAggregations | % { $_.Properties | select-object UsageStartTime, UsageEndTime, MeterCategory, MeterSubCategory, MeterName, @{N = 'InstanceName'; E = { ($_.InstanceData | ConvertFrom-Json).'Microsoft.Resources'.resourceUri.Split('/') | select -Last 1 } }, @{N = 'RG'; E = { ($_.InstanceData | ConvertFrom-Json).'Microsoft.Resources'.resourceUri.Split('/')[4] } }, @{N = 'Location'; E = { ($_.InstanceData | ConvertFrom-Json).'Microsoft.Resources'.location } }, @{N = 'Quantity'; E = { $_.Quantity } }, Unit, MeterId, @{N = 'Tags'; E = { ($_.InstanceData | ConvertFrom-Json).'Microsoft.Resources'.tags } } } | where { ($(get-Date $_.UsageStartTime) -ge $(Get-date $ConsumptionDate.ToShortDateString()) -and ($(get-Date $_.UsageStartTime) -lt $(Get-date $ConsumptionDate.AddDays(1).ToShortDateString())) -and (($_.Tags -like "*$tagLabel=$tagValue*"))) } 
+    
+    # sum up quantities of instances with same MeterID, date and rg 
     $data = $UsageToExport | Group-Object InstanceName, RG, MeterID
     $result = @()
     $result += foreach ($item in $data) {
-        $item.Group | Select-Object -Unique @{N = 'UsageStartTime'; E = { $($ConsumptionDate.ToString("d")) } }, @{N = 'UsageEndTime'; E = { $($ConsumptionDate.AddDays(1).ToString("d")) } }, MeterCategory, MeterSubCategory, MeterName, InstanceName, RG, Location, @{Name = 'Quantity'; Expression = { (($item.Group) | Measure-Object -Property Quantity -sum).Sum } }, Unit, MeterId, Tags
+        $item.Group | Select-Object -Unique @{N = 'UsageStartTime'; E = { $($ConsumptionDate.ToString("d")) } }, @{N = 'UsageEndTime'; E = { $($EndDate.ToString("d")) } }, MeterCategory, MeterSubCategory, MeterName, InstanceName, RG, Location, @{Name = 'Quantity'; Expression = { (($item.Group) | Measure-Object -Property Quantity -sum).Sum } }, Unit, MeterId, Tags
     }
 
     $result | Export-Csv "$Env:temp/Usage.csv" -Encoding UTF8 -Delimiter ';' -NoTypeInformation
@@ -65,7 +73,7 @@ try {
     $RGName = (Get-AzResource -Name $storageAccount -ResourceType 'Microsoft.Storage/storageAccounts').ResourceGroupName
     $sa = Get-AzStorageAccount -Name $storageAccount -ResourceGroupName $RGName
     $ctx = $sa.Context
-    Set-AzStorageBlobContent -Container $containerName -Context $ctx -File "$Env:temp/Usage.csv" -Blob "$($ConsumptionDate.ToString("yyyyMMdd"))Consumption.csv" -Force
+    Set-AzStorageBlobContent -Container $containerName -Context $ctx -File "$Env:temp/Usage.csv" -Blob "$($ConsumptionDate.ToString("yyyyMMdd"))-$($EndDate.ToString("yyyyMMdd"))-Consumption.csv" -Force
 }
 catch {
     if (!$servicePrincipalConnection) {
