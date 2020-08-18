@@ -136,7 +136,11 @@
                     "version": "1.0.0.0",
                     "type": "PowerShell",
                     "description": "Runbook to gather azure consumption of the day.",
-                    "linkedToSchedule": "monthly"
+                    "linkedToSchedule": "monthly",
+                    "parameters": {
+                        "tagLabel": "ms-resource-usage",
+                        "tagValue": "azure-cloud-shell"
+                    }
                 },
                 {
                     "name": "RunBk_CreateTable",
@@ -319,6 +323,10 @@
                 },
                 "schedule": {
                     "name": "[variables('AA').runbooks[copyIndex()].linkedToSchedule]"
+                },
+                "parameters": {
+                   "tagLabel": "[variables('AA').runbooks[copyIndex()].parameters.tagLabel]",
+                   "tagValue": "[variables('AA').runbooks[copyIndex()].parameters.tagValue]"
                 }
             }
         },
