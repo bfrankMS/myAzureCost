@@ -71,7 +71,7 @@ $templateParameterObject1 = @{
 'myAzureCostSmtpRecipient' =  [string](Read-Host -Prompt 'The email address of the recipient')  # The email recipient
 'firstName'= [string](Read-Host -Prompt 'First name of recipient')
 'lastName'= [string](Read-Host -Prompt 'Last name of recipient')
-'password' = [securestring] $(Read-Host -Prompt 'Please enter a complex sendgrid sender account password' -AsSecureString)
+'password' = [string] $(Read-Host -Prompt 'Please enter a complex sendgrid sender account password' -AsSecureString)
 'myAzureCostCultureInfo'=[string] 'de-DE' #en-US, ....
 }  
 
