@@ -37,12 +37,12 @@ Once successful your shell should appear at the bottom of the page:
 Create a Resource Group in a Sendgrid Service supported region.  
 ```PowerShell
 $RGName = "rg-myAzureCost"
-$SendGridAllowedLocations= @('australiaeast','australiasoutheast','brazilsouth','canadacentral','canadaeast','centralindia','centralus','eastasia','eastus','eastus2','francecentral','francesouth','japaneast','japanwest','koreacentral','koreasouth','northcentralus','northeurope','southafricanorth','southafricawest','southcentralus','southindia','southeastasia','uaecentral','uaenorth','uksouth','ukwest','westcentralus','westeurope','westindia','westus','westus2')
+$AllowedLocations= @("australiacentral","australiaeast","australiasoutheast","brazilsouth","canadacentral","centralindia","centralus","eastasia","eastus","eastus2","francecentral","japaneast","koreacentral","northcentralus","northeurope","southafricanorth","southcentralus","southeastasia","uksouth","westcentralus","westeurope","westus","westus2")
 
 #select your deployment region
 do {
     $regions = @("")
-    $SendGridAllowedLocations | foreach -Begin { $i = 0 } -Process {
+    $AllowedLocations | foreach -Begin { $i = 0 } -Process {
         $i++
         $regions += "{0}. {1}" -f $i, $_
     } -outvariable menu
@@ -69,9 +69,10 @@ Please **copy & paste this script into your Cloud Shell**:
 # These are some parameters for the deployment
 $templateParameterObject1 = @{
 'myAzureCostSmtpRecipient' =  [string](Read-Host -Prompt 'The email address of the recipient')  # The email recipient
-'firstName'= [string](Read-Host -Prompt 'First name of recipient')
-'lastName'= [string](Read-Host -Prompt 'Last name of recipient')
-'password' = [string] $(Read-Host -Prompt 'Please enter a complex sendgrid sender account password' -AsSecureString)
+'myAzureCostSmtpSender'= [string](Read-Host -Prompt 'The email address of the sender')
+'myAzureCostSmtpSenderPassword'= [string] $(Read-Host -Prompt "The sender's email password" -AsSecureString)
+'myAzureCostSmtpServer' = [string] "smtp.office365.com" # The sender s email server
+'myAzureCostSmtpServerSSLPort' = [string] "587" # The sender's email server SSL Port
 'myAzureCostCultureInfo'=[string] 'de-DE' #en-US, ....
 }  
 

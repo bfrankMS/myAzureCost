@@ -44,22 +44,30 @@
                 "description": "The email address the consumption is sent to"
             }
         },
-        "firstName": {
+        "myAzureCostSmtpSender": {
             "type": "string",
             "metadata": {
-                "description": "The email recipient's first name"
+                "description": "The senders O365 email address"
             }
         },
-        "lastName": {
-            "type": "string",
-            "metadata": {
-                "description": "The email recipient's last name"
-            }
-        },
-        "password": {
+        "myAzureCostSmtpSenderPassword": {
             "type": "securestring",
             "metadata": {
-                "description": "The sendgrid sender account password"
+                "description": "The sender account password"
+            }
+        },
+        "myAzureCostSmtpServer": {
+            "type": "string",
+            "defaultValue": "smtp.office365.com",
+            "metadata": {
+                "description": "The sender's SMTP Server"
+            }
+        },
+        "myAzureCostSmtpServerSSLPort": {
+            "type": "string",
+            "defaultValue": "587",
+            "metadata": {
+                "description": "The sender's SMTP Server's SSL Port"
             }
         },
         "baseTime": {
@@ -122,6 +130,18 @@
                 "isEncrypted": false
             },
             {
+                "name": "myAzureCostSmtpServer",
+                "description": "The sender's email server address",
+                "value": "[concat('\"',parameters('myAzureCostSmtpServer'),'\"')]",
+                "isEncrypted": false
+            },
+            {
+                "name": "myAzureCostSmtpServerSSLPort",
+                "description": "The sender's email server secure ssl port to connect to",
+                "value": "[concat('\"',parameters('myAzureCostSmtpServerSSLPort'),'\"')]",
+                "isEncrypted": false
+            },
+            {
                 "name": "myAzureCostCultureInfo",
                 "description": "The culture info string e.g. 'de-DE' used for encoding .csv attached to email",
                 "value": "[concat('\"',parameters('myAzureCostCultureInfo'),'\"')]",
@@ -151,7 +171,7 @@
                     "url": "[concat(parameters('_artifactsLocation'), '/RunBk_SendCostEmail.ps1', parameters('_artifactsLocationSasToken'))]",
                     "version": "1.0.0.0",
                     "type": "PowerShell",
-                    "description": "Runbook to calculate costs and send them as email (via sendgrid).",
+                    "description": "Runbook to calculate costs and send them as email.",
                     "linkedToSchedule": ""
                 },
                 {
@@ -159,7 +179,7 @@
                     "url": "[concat(parameters('_artifactsLocation'), '/RunBk_SendUsageEmail.ps1', parameters('_artifactsLocationSasToken'))]",
                     "version": "1.0.0.0",
                     "type": "PowerShell",
-                    "description": "Send consumption as .csv attached to an email (via sendgrid).",
+                    "description": "Send consumption as .csv attached to an email.",
                     "linkedToSchedule": ""
                 }
 
@@ -200,31 +220,9 @@
                     "timeZone": "UTC"
                 }
             ]
-        },
-        "sendgridName": "[concat('sgrid',parameters('ConsumptionStorageAccountNamePrefix'),substring(uniqueString(resourceGroup().id),0,4))]"
+        }
     },
     "resources": [
-        {
-            "type": "Sendgrid.Email/accounts",
-            "apiVersion": "2015-01-01",
-            "name": "[variables('sendgridName')]",
-            "location": "[resourceGroup().location]",
-            "plan": {
-                "name": "free",
-                "publisher": "Sendgrid",
-                "product": "sendgrid_azure",
-                "promotionCode": ""
-            },
-            "properties": {
-                "password": "[parameters('password')]",
-                "acceptMarketingEmails": false,
-                "email": "[parameters('myAzureCostSmtpRecipient')]",
-                "firstName": "[parameters('firstName')]",
-                "lastName": "[parameters('lastName')]",
-                "company": "na",
-                "website": ""
-            }
-        },
         {
             "type": "Microsoft.Storage/storageAccounts",
             "apiVersion": "2019-04-01",
@@ -266,14 +264,13 @@
         {
             "type": "Microsoft.Automation/automationAccounts/credentials",
             "apiVersion": "2015-10-31",
-            "name": "[concat(variables('automationAccountName'), '/myAzureCostSendgrid')]",
+            "name": "[concat(variables('automationAccountName'), '/myAzureCostSmtpSender')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Automation/automationAccounts', variables('automationAccountName'))]",
-                "[variables('sendgridName')]"
+                "[resourceId('Microsoft.Automation/automationAccounts', variables('automationAccountName'))]"
             ],
             "properties": {
-                "userName": "[reference(resourceId('Sendgrid.Email/accounts', variables('sendgridName'))).username]",
-                "password": "[parameters('password')]"
+                "userName": "[parameters('myAzureCostSmtpSender')]",
+                "password": "[parameters('myAzureCostSmtpSenderPassword')]"
             }
         },
         {
@@ -386,7 +383,7 @@
             "copy": {
                 "name": "modulesLoop",
                 "count": "[length(variables('AA').modules)]",
-                "mode" : "Serial"
+                "mode": "Serial"
             },
             "properties": {
                 "contentLink": {

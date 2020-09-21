@@ -12,10 +12,12 @@ $connectionName = "AzureRunAsConnection"
 $AzureSubscriptionId = "myAzureCostAzureSubscriptionId"
 $storageAccount = Get-AutomationVariable -Name "myAzureCostStorageAccountName"
 $containerName = Get-AutomationVariable -Name "myAzureCostSAContainer"
-$UserCredential = Get-AutomationPSCredential -Name 'myAzureCostSendgrid'
+$UserCredential = Get-AutomationPSCredential -Name 'myAzureCostSmtpSender'
 $smtpUser = $UserCredential.UserName
 $smtpPassword = $UserCredential.Password
 $smtpRecipient = Get-AutomationVariable -Name 'myAzureCostSmtpRecipient' 
+$smtpServer = Get-AutomationVariable -Name 'myAzureCostSmtpServer'
+$smtpServerSSLPort = Get-AutomationVariable -Name 'myAzureCostSmtpServerSSLPort'
 $myAzureCostPriceSheetURI = Get-AutomationVariable -Name 'myAzureCostPriceSheetURI'
 $myCultureInfo = Get-AutomationVariable -Name 'myAzureCostCultureInfo'
 $tableName = Get-AutomationVariable -Name "myAzureCostSATable"
@@ -249,7 +251,6 @@ function MyChart ($titleText, $results, $chartType) {
 "========================"
 "creating mail object"
 #mailing variables
-$smtpServer = "smtp.sendgrid.net"
 $smtpSenderAddress = $smtpUser
 if ((Get-AzContext).name -match "^(.*) - .*$") {
     $subscriptionName = $Matches[1]
@@ -413,6 +414,8 @@ if ((Test-Path $transformedUsagePath )) {
 
 "Sending mail"
 #send the mail.
-$mailClient = [System.Net.Mail.SmtpClient]::new($smtpServer, 25)
+$mailClient = [System.Net.Mail.SmtpClient]::new($smtpServer, $smtpServerSSLPort)
+$mailClient.EnableSsl = $true
+$mailClient.UseDefaultCredentials = $false; # Important: This line of code must be executed before setting the NetworkCredentials object, otherwise the setting will be reset (a bug in .NET)
 $mailClient.Credentials = [System.Net.NetworkCredential]::new($smtpUser, $smtpPassword);
 $mailClient.Send($mail);
