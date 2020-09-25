@@ -28,7 +28,8 @@ $ApiVersion = '2016-08-31-preview' # don't modify unless you know what your are 
 $Currency = 'EUR'                  # try your currency in which the resource rates need to be provided.
 $Locale = 'en-US'                  # don't modify unless you know what your are doing.
 $RegionInfo = 'DE'                 # 2 letter ISO code where the offer was purchased.
-$OfferDurableId = 'MS-AZR-0063P'   # find out your offer ID: [Azure Portal] -> Home -> Subscriptions -> Overview -> Offer ID: .....   -> see https://azure.microsoft.com/en-us/support/legal/offer-details/
+$OfferDurableId = 'MS-AZR-0063P'   # find out your offer ID: [Azure Portal] -> Home -> Subscriptions -> Overview -> Offer ID: .....   -> see https://azure.microsoft.com/en-us/support/legal/offer-details/  
+
 ```
 
 **Copy the above code / variables into the azure cloud shell**:  

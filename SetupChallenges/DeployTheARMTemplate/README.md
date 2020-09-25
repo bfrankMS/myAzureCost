@@ -78,7 +78,9 @@ $templateParameterObject1 = @{
 
 ```
 Re**run above code until you are happy with the values** ;-) 
-> **Important**: Make sure to **use a complex password for the sendgrid email account**! Otherwhise Sendgrid mail setup may fail or be soon out of service.  
+> **Important**: The Smtp Sender is an existing O365 account used to send emails  
+> **I did remove sendgrid as email sending part as too volatile and difficult to automate**  
+
 Now **kick of the ARM deployment** using aboves parameters - **copy & paste the following code into the cloud shell**:  
   
 ```PowerShell
