@@ -98,7 +98,11 @@ $smtpSubject = "Usage report of $($StartDate.ToString("yyyyMMdd")) for $subscrip
 #Create the .net email object
 $mail = [System.Net.Mail.MailMessage]::new()
 $mail.From = [System.Net.Mail.MailAddress]::new($smtpSenderAddress, "myAzureCost");
-$mail.To.Add([System.Net.Mail.MailAddress]::new($smtpRecipient));
+$smtpRecipients = $smtpRecipient -split "[,;]"
+foreach ($smtpRecipient in $smtpRecipients)
+{
+    $mail.To.Add([System.Net.Mail.MailAddress]::new($smtpRecipient));
+}
 $mail.Subject = $smtpSubject;
 
 #The content of the email is HTML
@@ -140,4 +144,16 @@ $mailClient = [System.Net.Mail.SmtpClient]::new($smtpServer, $smtpServerSSLPort)
 $mailClient.EnableSsl = $true
 $mailClient.UseDefaultCredentials = $false; # Important: This line of code must be executed before setting the NetworkCredentials object, otherwise the setting will be reset (a bug in .NET)
 $mailClient.Credentials = [System.Net.NetworkCredential]::new($smtpUser, $smtpPassword);
-$mailClient.Send($mail);
+try
+{
+    $mailClient.Send($mail);
+}
+catch [Exception]
+{
+    Write-Host "Exception caught in Send - Exception info below:"
+    $($_.Exception)
+}
+finally
+{
+    $mailClient.Dispose()
+}
