@@ -1,4 +1,4 @@
-﻿param (
+param (
     [parameter(Mandatory = $false,
         HelpMessage = "Enter a en-us formatted date e.g. '12/30/2019'")]
     [String]$myDate
@@ -116,7 +116,7 @@ Write-Output 'Calculating costs...i.e.: Matching MeterIDs of usage to pricelist.
 $costEntries = @()
 foreach ($usageEntry in $usageEntries) {
     Write-Host "." -NoNewline
-    $costEntries += $usageEntry | select-object UsageStartTime, UsageEndTime, MeterCategory, MeterSubCategory, MeterName, InstanceName, RG, Location, @{N = 'Quantity'; E = { [decimal]$_.Quantity } }, Unit, @{N = 'UnitPrice'; E = { $MeterID = $_.MeterId ; ($priceList | where { $_.MeterId -eq $MeterID }).MeterRates -match "([0-9]+\.[0-9]*)" | Out-Null ; $price = [decimal]0; $price = ([decimal]($Matches[1])) ; $price } }, @{N = 'Estimated Costs'; E = { $MeterID = $_.MeterID ; ($priceList | where { $_.MeterId -eq $MeterID }).MeterRates -match "([0-9]+\.[0-9]*)" | Out-Null ; $price = [decimal]0; $price = ([decimal]($Matches[1]) * [decimal]$_.Quantity) ; $price } } , MeterID, Tags
+    $costEntries += $usageEntry | select-object UsageStartTime, UsageEndTime, MeterCategory, MeterSubCategory, MeterName, InstanceName, RG, Location, @{N = 'Quantity'; E = { [decimal]$_.Quantity } }, Unit, @{N = 'UnitPrice'; E = { $MeterID = $_.MeterId ; $price = [decimal]0;$price =[decimal]($priceList | where { $_.MeterId -eq $MeterID }).MeterRates ; $price } }, @{N = 'Estimated Costs'; E = { $MeterID = $_.MeterID ;  $price = [decimal]0;$price =[decimal]($priceList | where { $_.MeterId -eq $MeterID }).MeterRates; $price = ($price * [decimal]$_.Quantity) ; $price } } , MeterID, Tags
 }
 
 # reporting section
