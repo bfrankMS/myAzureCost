@@ -89,7 +89,7 @@
         "automationAccountName": "[concat(parameters('automationAccountPrefix'),substring(uniqueString(resourceGroup().id),0,4))]",
         "PrereqModule": {
             "name": "Az.Accounts",
-            "url": "https://www.powershellgallery.com/api/v2/package/Az.Accounts/1.9.0"
+            "url": "https://www.powershellgallery.com/api/v2/package/Az.Accounts/2.8.0"
         },
         "myAzureCostPriceSheetURI": "ToDo-upload-price-sheet-and-create-URI-with-SAS-and-place-it-here",
         "AAVariables": [
@@ -187,19 +187,19 @@
             "modules": [
                 {
                     "name": "Az.Resources",
-                    "url": "https://www.powershellgallery.com/api/v2/package/Az.Resources/2.2.0"
+                    "url": "https://www.powershellgallery.com/api/v2/package/Az.Resources/6.0.0"
                 },
                 {
                     "name": "Az.Storage",
-                    "url": "https://www.powershellgallery.com/api/v2/package/Az.Storage/2.2.0"
+                    "url": "https://www.powershellgallery.com/api/v2/package/Az.Storage/4.6.0"
                 },
                 {
                     "name": "Az.Billing",
-                    "url": "https://www.powershellgallery.com/api/v2/package/Az.Billing/1.0.3"
+                    "url": "https://www.powershellgallery.com/api/v2/package/Az.Billing/2.0.0"
                 },
                 {
                     "name": "AzTable",
-                    "url": "https://www.powershellgallery.com/api/v2/package/AzTable/2.0.3"
+                    "url": "https://www.powershellgallery.com/api/v2/package/AzTable/2.1.0"
                 }
             ],
             "schedules": [
